@@ -1,6 +1,6 @@
 import unittest
 
-from htmlnode import HTMLNode
+from htmlnode import HTMLNode, LeafNode
 
 
 class TestHTMLNode(unittest.TestCase):
@@ -106,6 +106,44 @@ class TestHTMLNode(unittest.TestCase):
         # Tag is None and value appears directly in the repr
         self.assertTrue(r.startswith("HTMLNode("))
         self.assertIn("None, raw & text", r)
+
+
+class TestLeafNode(unittest.TestCase):
+    def test_leaf_to_html_p(self):
+        node = LeafNode("p", "Hello, world!")
+        self.assertEqual(node.to_html(), "<p>Hello, world!</p>")
+
+    def test_leaf_empty_value_raises(self):
+        node = LeafNode("p", "")
+        with self.assertRaises(ValueError):
+            node.to_html()
+
+    def test_leaf_none_value_raises(self):
+        node = LeafNode("p", "temp")
+        node.value = None  # to make the static typer ignore the typing error
+        with self.assertRaises(ValueError):
+            node.to_html()
+
+    def test_leaf_tag_none_returns_raw(self):
+        node = LeafNode(None, "raw output")
+        self.assertEqual(node.to_html(), "raw output")
+
+    def test_leaf_props_included(self):
+        node = LeafNode("a", "link", {"href": "https://example.com"})
+        self.assertEqual(node.to_html(), '<a href="https://example.com">link</a>')
+
+    def test_leaf_props_boolean_and_none(self):
+        props = {"disabled": True, "hidden": False, "data": None}
+        node = LeafNode("input", "value", props)
+        out = node.to_html()
+        # Current props behavior stringifies all values into attributes
+        self.assertIn(' disabled="True"', out)
+        self.assertIn(' hidden="False"', out)
+        self.assertIn(' data="None"', out)
+
+    def test_leaf_repr(self):
+        node = LeafNode("p", "text", {"class": "a"})
+        self.assertEqual(repr(node), "LeafNode(p, text, {'class': 'a'})")
 
 
 if __name__ == "__main__":
