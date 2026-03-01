@@ -207,6 +207,19 @@ class TestParentNode(unittest.TestCase):
             '<div id="main"><span class="c"><i>x</i></span></div>',
         )
 
+    def test_repr(self):
+        # ParentNode.__repr__ should include the class name, tag, children's repr, and props
+        child_node = LeafNode("span", "text", {"class": "a"})
+        parent_node = ParentNode("div", [child_node], {"id": "main"})
+        r = repr(parent_node)
+        self.assertIn("ParentNode(", r)
+        # Tag name appears in the repr
+        self.assertIn("div", r)
+        # Child's repr should be present (LeafNode(...))
+        self.assertIn("LeafNode(", r)
+        # Props dict should appear in the repr text
+        self.assertIn("{'id': 'main'}", r)
+
     def test_non_htmlnode_child_raises_attribute_error(self):
         # If a child isn't an HTMLNode (and thus has no to_html), an AttributeError will occur
         parent_node = ParentNode("div", ["not-a-node"])
