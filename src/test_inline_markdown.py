@@ -1,6 +1,10 @@
 import unittest
 
-from inline_markdown import split_nodes_delimiter
+from inline_markdown import (
+    extract_markdown_images,
+    extract_markdown_links,
+    split_nodes_delimiter,
+)
 from textnode import TextNode, TextType
 
 
@@ -87,6 +91,46 @@ class TestInlineMarkdown(unittest.TestCase):
             pre_bold,
         ]
         self.assertListEqual(new_nodes, expected)
+
+
+class TestExtraction(unittest.TestCase):
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+    def test_extract_markdown_links(self):
+        text = "Check [boot.dev](https://boot.dev) and [example](http://example.com)"
+        matches = extract_markdown_links(text)
+        expected = [("boot.dev", "https://boot.dev"), ("example", "http://example.com")]
+        self.assertListEqual(matches, expected)
+
+    def test_links_and_images_mixed(self):
+        s = "Here is ![an image](https://img) and a [link](https://link)"
+        images = extract_markdown_images(s)
+        links = extract_markdown_links(s)
+        self.assertListEqual(images, [("an image", "https://img")])
+        self.assertListEqual(links, [("link", "https://link")])
+
+    def test_no_links_returns_empty(self):
+        self.assertListEqual(extract_markdown_links("no links here"), [])
+
+    def test_link_text_with_brackets(self):
+        # Ensure text containing brackets inside the link text is handled by the regex (only outer pairs match)
+        s = "A tricky [weird [inner]](https://outer) case"
+        links = extract_markdown_links(s)
+        # The regex matches the first balanced [] pair content (it won't match nested brackets), so it should capture 'weird [inner]'
+        self.assertListEqual(links, [("weird [inner]", "https://outer")])
+
+    def test_image_with_empty_alt_or_url(self):
+        # Images with empty alt or src still match; regex should return empty strings for groups if present
+        s1 = "Empty alt: ![](https://img1)"
+        s2 = "Empty src: ![alt]()"
+        m1 = extract_markdown_images(s1)
+        m2 = extract_markdown_images(s2)
+        self.assertListEqual(m1, [("", "https://img1")])
+        self.assertListEqual(m2, [("alt", "")])
 
 
 if __name__ == "__main__":
