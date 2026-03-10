@@ -52,3 +52,27 @@ def text_node_to_html_node(textnode: TextNode):
             return LeafNode("img", "", {"src": textnode.url, "alt": textnode.text})
         case _:
             raise Exception("Unknown TextType Enum")
+
+
+def text_to_textnodes(text):
+    """
+    Convert a plain string into a list of TextNode objects, applying inline
+    markdown splitting. The imports for the inline_markdown helpers are done
+    lazily here to avoid a circular import: inline_markdown imports TextNode /
+    TextType from this module.
+    """
+    # Import here to defer until this function is called (breaks circular import).
+    from inline_markdown import (
+        split_nodes_delimiter,
+        split_nodes_image,
+        split_nodes_link,
+    )
+
+    result = [TextNode(text, TextType.TEXT)]
+    result = split_nodes_delimiter(result, "**", TextType.BOLD)
+    result = split_nodes_delimiter(result, "_", TextType.ITALIC)
+    result = split_nodes_delimiter(result, "`", TextType.CODE)
+    result = split_nodes_image(result)
+    result = split_nodes_link(result)
+
+    return result

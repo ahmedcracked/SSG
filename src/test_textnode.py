@@ -1,6 +1,11 @@
 import unittest
 
-from textnode import TextNode, TextType, text_node_to_html_node
+from textnode import (
+    TextNode,
+    TextType,
+    text_node_to_html_node,
+    text_to_textnodes,
+)
 
 
 class TestTextNode(unittest.TestCase):
@@ -131,6 +136,107 @@ class TestTextNodeToHTMLNode(unittest.TestCase):
         node = TextNode("x", None)
         with self.assertRaises(Exception):
             text_node_to_html_node(node)
+
+
+class TestTextToTextnodes(unittest.TestCase):
+    def test_text_to_textnodes_mixed(self):
+        s = (
+            "This is **text** with an _italic_ word and a `code block`"
+            " and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a "
+            "[link](https://boot.dev)"
+        )
+        nodes = text_to_textnodes(s)
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode(
+                "obi wan image",
+                TextType.IMAGE,
+                "https://i.imgur.com/fJRm4Vk.jpeg",
+            ),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+        self.assertListEqual(nodes, expected)
+
+    def test_preserve_order(self):
+        # Ensure the sequence of nodes returned preserves the original text order
+        s = "start _I_ middle **B** `C` end"
+        nodes = text_to_textnodes(s)
+        expected = [
+            TextNode("start ", TextType.TEXT),
+            TextNode("I", TextType.ITALIC),
+            TextNode(" middle ", TextType.TEXT),
+            TextNode("B", TextType.BOLD),
+            TextNode(" ", TextType.TEXT),
+            TextNode("C", TextType.CODE),
+            TextNode(" end", TextType.TEXT),
+        ]
+        self.assertListEqual(nodes, expected)
+
+    def test_repeated_same_type_adjacent(self):
+        # multiple bold sections adjacent with no text between: **** style
+        s = "**a****b****c**"
+        nodes = text_to_textnodes(s)
+        expected = [
+            TextNode("a", TextType.BOLD),
+            TextNode("b", TextType.BOLD),
+            TextNode("c", TextType.BOLD),
+        ]
+        self.assertListEqual(nodes, expected)
+
+    def test_adjacent_elements_no_space(self):
+        # Mix of link elements adjacent with no space; order should match original
+        s = "A [x](u1)[y](u2)B"
+        nodes = text_to_textnodes(s)
+        expected = [
+            TextNode("A ", TextType.TEXT),
+            TextNode("x", TextType.LINK, "u1"),
+            TextNode("y", TextType.LINK, "u2"),
+            TextNode("B", TextType.TEXT),
+        ]
+        self.assertListEqual(nodes, expected)
+
+    def test_touching_various_elements(self):
+        # Elements touching each other without spaces and in different orders
+        s = "[a](lu)![b](iu)`c`_d_**e**"
+        nodes = text_to_textnodes(s)
+        expected = [
+            TextNode("a", TextType.LINK, "lu"),
+            TextNode("b", TextType.IMAGE, "iu"),
+            TextNode("c", TextType.CODE),
+            TextNode("d", TextType.ITALIC),
+            TextNode("e", TextType.BOLD),
+        ]
+        self.assertListEqual(nodes, expected)
+
+    def test_image_then_link_touching(self):
+        # Image followed immediately by link, no spaces
+        s = "![img](iu)[link](lu)"
+        nodes = text_to_textnodes(s)
+        expected = [
+            TextNode("img", TextType.IMAGE, "iu"),
+            TextNode("link", TextType.LINK, "lu"),
+        ]
+        self.assertListEqual(nodes, expected)
+
+    def test_mixed_adjacent_and_repeated(self):
+        # A more complex mixture: adjacent bolds, touching link/image, followed by inline code
+        s = "**a****b**![i](iu)[l](lu)`z`"
+        nodes = text_to_textnodes(s)
+        expected = [
+            TextNode("a", TextType.BOLD),
+            TextNode("b", TextType.BOLD),
+            TextNode("i", TextType.IMAGE, "iu"),
+            TextNode("l", TextType.LINK, "lu"),
+            TextNode("z", TextType.CODE),
+        ]
+        self.assertListEqual(nodes, expected)
 
 
 if __name__ == "__main__":
