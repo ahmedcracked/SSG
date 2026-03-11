@@ -113,14 +113,8 @@ class TestLeafNode(unittest.TestCase):
         node = LeafNode("p", "Hello, world!")
         self.assertEqual(node.to_html(), "<p>Hello, world!</p>")
 
-    def test_leaf_empty_value_raises(self):
-        node = LeafNode("p", "")
-        with self.assertRaises(ValueError):
-            node.to_html()
-
     def test_leaf_none_value_raises(self):
-        node = LeafNode("p", "temp")
-        node.value = None  # to make the static typer ignore the typing error
+        node = LeafNode("p", None)
         with self.assertRaises(ValueError):
             node.to_html()
 

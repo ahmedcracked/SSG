@@ -52,12 +52,14 @@ class LeafNode(HTMLNode):
         super().__init__(tag, value, None, props)
 
     def to_html(self):
-        # this also raises error for empty strings because they're falsy
-        if not self.value:
+        if self.value is None:
             raise ValueError("All leaf nodes must have a value")
         if self.tag is None:
             # return the HTMLNode as a raw string
             return self.value
+        if self.value == "":
+            # self-closing tag
+            return f"<{self.tag}{self.props_to_html()}/>"
         html_string = (
             f"<{self.tag}" + self.props_to_html() + f">{self.value}</{self.tag}>"
         )
