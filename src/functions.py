@@ -27,6 +27,22 @@ def copy_files_recursive(source_dir_path, dest_dir_path):
             copy_files_recursive(from_path, dest_path)
 
 
+def generate_pages_recursive(dir_path_content, template_path, dir_path_dest):
+    for file_or_dir_name in os.listdir(dir_path_content):
+        file_or_dir_path = os.path.join(dir_path_content, file_or_dir_name)
+        file_or_dir_dest_path = os.path.join(dir_path_dest, file_or_dir_name)
+        if str.endswith(file_or_dir_name, ".md"):
+            generate_page(
+                file_or_dir_path,
+                template_path,
+                file_or_dir_dest_path.replace(".md", ".html"),
+            )
+        elif not os.path.isfile(file_or_dir_path):
+            generate_pages_recursive(
+                file_or_dir_path, template_path, file_or_dir_dest_path
+            )
+
+
 def generate_page(from_path, template_path, dest_path):
     print(f"*** Generating page from {from_path} to {dest_path} using {template_path}")
     dest_dir_path = os.path.dirname(dest_path)
