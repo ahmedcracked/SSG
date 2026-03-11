@@ -27,7 +27,7 @@ def copy_files_recursive(source_dir_path, dest_dir_path):
             copy_files_recursive(from_path, dest_path)
 
 
-def generate_pages_recursive(dir_path_content, template_path, dir_path_dest):
+def generate_pages_recursive(dir_path_content, template_path, dir_path_dest, basepath):
     for file_or_dir_name in os.listdir(dir_path_content):
         file_or_dir_path = os.path.join(dir_path_content, file_or_dir_name)
         file_or_dir_dest_path = os.path.join(dir_path_dest, file_or_dir_name)
@@ -36,14 +36,15 @@ def generate_pages_recursive(dir_path_content, template_path, dir_path_dest):
                 file_or_dir_path,
                 template_path,
                 file_or_dir_dest_path.replace(".md", ".html"),
+                basepath,
             )
         elif not os.path.isfile(file_or_dir_path):
             generate_pages_recursive(
-                file_or_dir_path, template_path, file_or_dir_dest_path
+                file_or_dir_path, template_path, file_or_dir_dest_path, basepath
             )
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"*** Generating page from {from_path} to {dest_path} using {template_path}")
     dest_dir_path = os.path.dirname(dest_path)
     if dest_dir_path != "":
@@ -56,8 +57,11 @@ def generate_page(from_path, template_path, dest_path):
     from_content, temp_content = from_file.read(), temp_file.read()
     title = extract_title(from_content)
     html_string = markdown_to_html_node(from_content).to_html()
-    final_html = temp_content.replace("{{ Title }}", title).replace(
-        "{{ Content }}", html_string
+    final_html = (
+        temp_content.replace("{{ Title }}", title)
+        .replace("{{ Content }}", html_string)
+        .replace('href="/', f'href="{basepath}')
+        .replace('src="/', f'src="{basepath}')
     )
 
     dest_file.write(final_html)
